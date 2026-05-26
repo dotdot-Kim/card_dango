@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일본어 플래시카드 단어장</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --star-color: #eab308;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 4px;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
+        }
+
+        /* 필터 탭 */
+        .tabs {
+            display: flex;
+            background-color: var(--border);
+            padding: 4px;
+            border-radius: 8px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            padding: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 카드 영역 */
+        .card-wrapper {
+            perspective: 1000px;
+            height: 320px;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            touch-action: pan-y; 
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            gap: 16px;
+        }
+
+        .kanji {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+
+        .reading {
+            font-size: 1.35rem;
+            color: var(--primary);
+            font-weight: 600;
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+
+        .meaning {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            word-break: keep-all;
+            line-height: 1.4;
+        }
+
+        .hint-text {
+            position: absolute;
+            bottom: 16px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        /* 카드 내 즐겨찾기 인디케이터 */
+        .card-star-indicator {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 1.5rem;
+            color: var(--star-color);
+            display: none;
+        }
+        
+        .flashcard.is-favorited-card .card-star-indicator {
+            display: block;
+        }
+
+        /* 일반 버튼 스타일 정의 */
+        .btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .btn:active {
+            background-color: var(--bg-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:active {
+            background-color: var(--primary-hover);
+        }
+
+        /* 하단 컨트롤 구조 */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        .progress {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .btn-fav-toggle {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+        }
+
+        .btn-fav-toggle.is-fav {
+            background-color: #fef08a;
+            border-color: var(--star-color);
+            color: #854d0e;
+        }
+
+        /* 모바일 크기 조정을 위한 이전/다음 네비게이션 버튼 전용 스타일 */
+        .nav-buttons-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .btn-nav {
+            flex: 1;
+            justify-content: center;
+            padding: 18px 24px;   
+            font-size: 1.25rem;   
+            border-radius: 12px;
+        }
+
+        /* 설정 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            z-index: 10;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        /* 등록된 시트 목록 레이아웃 스타일 */
+        .sheet-list-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sheet-list-container {
+            max-height: 140px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background-color: var(--bg-color);
+        }
+
+        .sheet-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sheet-item.active {
+            background-color: #e0e7ff;
+            border-color: #c7d2fe;
+            color: var(--primary);
+        }
+
+        .sheet-item-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .sheet-delete-btn {
+            font-size: 0.9rem;
+            color: #ef4444;
+            padding: 2px 6px;
+        }
+
+        .instructions {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <h1 id="appTitle">나만의 일본어 단어장</h1>
+            <button class="icon-btn" id="openSettingsBtn" title="설정">⚙️</button>
+        </header>
+
+        <!-- 필터 탭 -->
+        <div class="tabs">
+            <button class="tab-btn active" id="tabAll">전체 단어</button>
+            <button class="tab-btn" id="tabFav">즐겨찾기 ⭐</button>
+        </div>
+
+        <!-- 플래시 카드 영역 -->
+        <div class="card-wrapper">
+            <div class="flashcard" id="flashcard">
+                <!-- 카드 앞면 -->
+                <div class="card-face card-front">
+                    <div class="card-star-indicator">⭐</div>
+                    <div class="kanji" id="cardKanji">단어 로딩중...</div>
+                    <div class="hint-text">터치하면 뒤집기 / 좌우로 스와이프</div>
+                </div>
+                <!-- 카드 뒷면 -->
+                <div class="card-face card-back">
+                    <div class="card-star-indicator">⭐</div>
+                    <div class="reading" id="cardReading">요미가나</div>
+                    <div class="meaning" id="cardMeaning">의미</div>
+                    <div class="hint-text">터치하면 뒤집기 / 좌우로 스와이프</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 컨트롤 영역 -->
+        <div class="controls-row">
+            <span class="progress" id="progressIndex">0 / 0</span>
+            <button class="btn btn-fav-toggle" id="favToggleBtn">
+                <span>⭐</span> <span id="favBtnText">즐겨찾기</span>
+            </button>
+        </div>
+
+        <div class="nav-buttons-container">
+            <button class="btn btn-nav" id="prevBtn">이전</button>
+            <button class="btn btn-primary btn-nav" id="nextBtn">다음</button>
+        </div>
+        
+        <div style="display: flex; justify-content: center; margin-top: 4px;">
+            <button class="btn" id="shuffleBtn" style="font-size: 0.8rem; padding: 6px 12px;">🔀 단어 섞기</button>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-title">💾 단어장 시트 관리 (다중 등록)</div>
+            
+            <!-- v5 업데이트: 템플릿 가져오기 버튼 추가 -->
+            <div>
+                <a href="https://docs.google.com/spreadsheets/d/1a5MProcCpU8cpFRJKYYtPFiDJWZpDaEHF05mSfv0DIc/copy" 
+                   target="_blank" 
+                   class="btn btn-primary" 
+                   style="text-decoration: none; justify-content: center; background-color: #10b981; width: 100%;">
+                   🟢 구글 드라이브로 템플릿 가져오기
+                </a>
+            </div>
+
+            <div class="input-group">
+                <label for="sheetNameInput">시트 이름</label>
+                <input type="text" id="sheetNameInput" placeholder="예: N2 최신 동사, 기출 명사 등">
+            </div>
+
+            <div class="input-group">
+                <label for="sheetUrlInput">구글 시트 URL 또는 ID</label>
+                <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+            </div>
+
+            <button class="btn btn-primary" id="addSheetBtn" style="justify-content: center; font-size: 0.9rem; padding: 8px;">➕ 새로운 시트 등록</button>
+
+            <div class="sheet-list-wrapper">
+                <label style="font-size: 0.85rem; color: var(--text-sub); font-weight: 600;">등록된 단어장 선택</label>
+                <div class="sheet-list-container" id="sheetListContainer">
+                    <!-- 자바스크립트로 동적 렌더링 -->
+                </div>
+            </div>
+
+            <div class="instructions">
+                <strong>💡 단어장 등록 방법:</strong><br>
+                1. [템플릿 가져오기]를 눌러 내 구글 드라이브에 시트 사본을 생성합니다.<br>
+                2. 생성된 시트의 열(Kanji, Reading, Meaning)에 맞춰 단어를 입력합니다.<br>
+                3. 시트 [공유]를 눌러 액세스를 '링크가 있는 모든 사용자(뷰어)'로 변경합니다.<br>
+                4. 시트 주소(URL)를 복사한 뒤, 아래 입력창에 넣고 등록하면 완료됩니다!
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="closeSettingsBtn" style="padding: 6px 12px;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sampleWords = [
+            { 
+                kanji: "⚙️ 버튼을 눌러 단어 시트를 등록해 주세요<br>(터치해서 방법 확인)", 
+                reading: "1. [템플릿 가져오기]로 시트 사본을 생성\n2. 생성된 시트에 단어 입력", 
+                meaning: "3. 시트 [공유]를 눌러 액세스를 '링크가 있는 모든 사용자(뷰어)'로 변경\n4. 시트 주소(URL)를 복사해서 ⚙️에 붙여넣기" 
+            }
+        ];
+
+        let allWords = [];       
+        let displayWords = [];   
+        let currentIndex = 0;
+        let favorites = JSON.parse(localStorage.getItem('jp_flash_favs')) || [];
+        let currentTab = 'all';  
+
+        let sheetList = JSON.parse(localStorage.getItem('jp_sheet_list')) || [];
+        let currentSheetIndex = parseInt(localStorage.getItem('jp_current_sheet_idx')) || 0;
+
+        const appTitle = document.getElementById('appTitle');
+        const flashcard = document.getElementById('flashcard');
+        const cardKanji = document.getElementById('cardKanji');
+        const cardReading = document.getElementById('cardReading');
+        const cardMeaning = document.getElementById('cardMeaning');
+        const progressIndex = document.getElementById('progressIndex');
+        const favToggleBtn = document.getElementById('favToggleBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const tabAll = document.getElementById('tabAll');
+        const tabFav = document.getElementById('tabFav');
+        
+        const settingsModal = document.getElementById('settingsModal');
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const sheetNameInput = document.getElementById('sheetNameInput');
+        const sheetUrlInput = document.getElementById('sheetUrlInput');
+        const sheetListContainer = document.getElementById('sheetListContainer');
+        const addSheetBtn = document.getElementById('addSheetBtn');
+
+        initApp();
+
+        function initApp() {
+            renderSheetList();
+            if (sheetList.length > 0 && sheetList[currentSheetIndex]) {
+                const activeSheet = sheetList[currentSheetIndex];
+                appTitle.innerText = activeSheet.name;
+                fetchSheetData(activeSheet.url);
+            } else {
+                appTitle.innerText = "나만의 일본어 단어장";
+                allWords = [...sampleWords];
+                applyFilterAndRender();
+            }
+        }
+
+        function extractSheetId(urlOrId) {
+            if (urlOrId.includes('docs.google.com/spreadsheets')) {
+                const matches = urlOrId.match(/\/d\/([^\/]+)/);
+                return matches ? matches[1] : null;
+            }
+            return urlOrId.trim();
+        }
+
+        async function fetchSheetData(urlOrId) {
+            const sheetId = extractSheetId(urlOrId);
+            if (!sheetId) {
+                alert('유효하지 않은 주소 양식입니다.');
+                return;
+            }
+
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+
+            try {
+                cardKanji.innerHTML = "단어장 로딩중...";
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('네트워크 오류');
+                
+                const csvText = await response.text();
+                parseCSVData(csvText);
+            } catch (error) {
+                alert('단어 로딩 실패. 시트 주소 및 링크 공유 설정 상태를 확인해 주세요.');
+                allWords = [...sampleWords];
+                applyFilterAndRender();
+            }
+        }
+
+        function parseCSVData(text) {
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+            if (lines.length <= 1) return;
+
+            const parsed = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                let row = [];
+                let insideQuote = false;
+                let current = '';
+
+                for (let char of line) {
+                    if (char === '"') {
+                        insideQuote = !insideQuote;
+                    } else if (char === ',' && !insideQuote) {
+                        row.push(current.trim().replace(/^"|"$/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                row.push(current.trim().replace(/^"|"$/g, ''));
+
+                if (row.length >= 3) {
+                    parsed.push({ kanji: row[0], reading: row[1], meaning: row[2] });
+                }
+            }
+
+            if (parsed.length > 0) {
+                allWords = parsed;
+                applyFilterAndRender();
+            }
+        }
+
+        function applyFilterAndRender() {
+            if (currentTab === 'fav') {
+                displayWords = allWords.filter(w => favorites.includes(w.kanji));
+            } else {
+                displayWords = [...allWords];
+            }
+            currentIndex = 0;
+            flashcard.classList.remove('flipped');
+            updateCardView();
+        }
+
+        function updateCardView() {
+            if (displayWords.length === 0) {
+                cardKanji.innerHTML = currentTab === 'fav' ? "즐겨찾기된<br>단어가 없습니다. ⭐" : "단어가 비어있습니다.";
+                cardReading.innerHTML = "-";
+                cardMeaning.innerHTML = "단어를 시트에 추가해 보세요.";
+                progressIndex.innerText = "0 / 0";
+                favToggleBtn.classList.remove('is-fav');
+                flashcard.classList.remove('is-favorited-card');
+                return;
+            }
+
+            const currentWord = displayWords[currentIndex];
+            cardKanji.innerHTML = currentWord.kanji.replace(/\n/g, '<br>');
+            cardReading.innerHTML = currentWord.reading.replace(/\n/g, '<br>');
+            cardMeaning.innerHTML = currentWord.meaning.replace(/\n/g, '<br>');
+            progressIndex.innerText = `${currentIndex + 1} / ${displayWords.length}`;
+
+            if (favorites.includes(currentWord.kanji)) {
+                favToggleBtn.classList.add('is-fav');
+                flashcard.classList.add('is-favorited-card'); 
+            } else {
+                favToggleBtn.classList.remove('is-fav');
+                flashcard.classList.remove('is-favorited-card');
+            }
+        }
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let touchStartY = 0;
+        let touchEndY = 0;
+        let isSwiping = false; 
+
+        flashcard.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+            isSwiping = false;
+        }, { passive: true });
+
+        flashcard.addEventListener('touchmove', (e) => {
+            const currentX = e.changedTouches[0].screenX;
+            if (Math.abs(currentX - touchStartX) > 10) {
+                isSwiping = true;
+            }
+        }, { passive: true });
+
+        flashcard.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+                if (displayWords.length <= 1) return;
+                
+                flashcard.classList.remove('flipped');
+                setTimeout(() => {
+                    if (deltaX < 0) {
+                        currentIndex = (currentIndex + 1) % displayWords.length;
+                    } else {
+                        currentIndex = (currentIndex - 1 + displayWords.length) % displayWords.length;
+                    }
+                    updateCardView();
+                }, 150);
+            }
+        }
+
+        flashcard.addEventListener('click', () => {
+            if (isSwiping) return; 
+            if (displayWords.length > 0) {
+                flashcard.classList.toggle('flipped');
+            }
+        });
+
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (displayWords.length <= 1) return;
+            flashcard.classList.remove('flipped');
+            setTimeout(() => {
+                currentIndex = (currentIndex - 1 + displayWords.length) % displayWords.length;
+                updateCardView();
+            }, 150);
+        });
+
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (displayWords.length <= 1) return;
+            flashcard.classList.remove('flipped');
+            setTimeout(() => {
+                currentIndex = (currentIndex + 1) % displayWords.length;
+                updateCardView();
+            }, 150);
+        });
+
+        favToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (displayWords.length === 0) return;
+            
+            const currentKanji = displayWords[currentIndex].kanji;
+            const favIndex = favorites.indexOf(currentKanji);
+
+            if (favIndex > -1) {
+                favorites.splice(favIndex, 1);
+            } else {
+                favorites.push(currentKanji);
+            }
+
+            localStorage.setItem('jp_flash_favs', JSON.stringify(favorites));
+            updateCardView();
+
+            if (currentTab === 'fav') {
+                setTimeout(() => { applyFilterAndRender(); }, 250);
+            }
+        });
+
+        shuffleBtn.addEventListener('click', () => {
+            if (displayWords.length <= 1) return;
+            flashcard.classList.remove('flipped');
+            setTimeout(() => {
+                for (let i = displayWords.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [displayWords[i], displayWords[j]] = [displayWords[j], displayWords[i]];
+                }
+                currentIndex = 0;
+                updateCardView();
+            }, 150);
+        });
+
+        tabAll.addEventListener('click', () => {
+            if (currentTab === 'all') return;
+            currentTab = 'all';
+            tabAll.classList.add('active');
+            tabFav.classList.remove('active');
+            applyFilterAndRender();
+        });
+
+        tabFav.addEventListener('click', () => {
+            if (currentTab === 'fav') return;
+            currentTab = 'fav';
+            tabFav.classList.add('active');
+            tabAll.classList.remove('active');
+            applyFilterAndRender();
+        });
+
+        openSettingsBtn.addEventListener('click', () => settingsModal.classList.add('open'));
+        closeSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('open'));
+        
+        addSheetBtn.addEventListener('click', () => {
+            const name = sheetNameInput.value.trim();
+            const url = sheetUrlInput.value.trim();
+            
+            if (!name || !url) {
+                alert('시트 이름과 주소를 모두 적어주세요.');
+                return;
+            }
+
+            sheetList.push({ name, url });
+            localStorage.setItem('jp_sheet_list', JSON.stringify(sheetList));
+            
+            sheetNameInput.value = '';
+            sheetUrlInput.value = '';
+            
+            if (sheetList.length === 1) {
+                changeActiveSheet(0);
+            } else {
+                renderSheetList();
+            }
+        });
+
+        function renderSheetList() {
+            sheetListContainer.innerHTML = '';
+            if (sheetList.length === 0) {
+                sheetListContainer.innerHTML = '<div style="font-size:0.8rem; text-align:center; color:var(--text-sub); padding:12px;">등록된 시트가 없습니다. 상단에서 추가해 주세요.</div>';
+                return;
+            }
+
+            sheetList.forEach((sheet, idx) => {
+                const div = document.createElement('div');
+                div.className = `sheet-item ${idx === currentSheetIndex ? 'active' : ''}`;
+                div.onclick = () => changeActiveSheet(idx);
+
+                div.innerHTML = `
+                    <span class="sheet-item-name">${sheet.name}</span>
+                    <span class="sheet-delete-btn" onclick="removeSheet(event, ${idx})">🗑️</span>
+                `;
+                sheetListContainer.appendChild(div);
+            });
+        }
+
+        function changeActiveSheet(idx) {
+            currentSheetIndex = idx;
+            localStorage.setItem('jp_current_sheet_idx', currentSheetIndex);
+            renderSheetList();
+            
+            const activeSheet = sheetList[idx];
+            appTitle.innerText = activeSheet.name;
+            fetchSheetData(activeSheet.url);
+        }
+
+        window.removeSheet = function(event, idx) {
+            event.stopPropagation();
+            if (!confirm('해당 단어장을 연동 목록에서 삭제하시겠습니까?')) return;
+
+            sheetList.splice(idx, 1);
+            localStorage.setItem('jp_sheet_list', JSON.stringify(sheetList));
+
+            if (currentSheetIndex === idx) {
+                currentSheetIndex = 0;
+            } else if (currentSheetIndex > idx) {
+                currentSheetIndex--;
+            }
+            localStorage.setItem('jp_current_sheet_idx', currentSheetIndex);
+
+            renderSheetList();
+            initApp();
+        }
+    </script>
+</body>
+</html>
