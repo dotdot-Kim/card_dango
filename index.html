@@ -157,6 +157,7 @@
             color: var(--text-main);
             word-break: keep-all;
             line-height: 1.4;
+            font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, "Yu Gothic", sans-serif;
         }
 
         .reading {
@@ -315,16 +316,20 @@
             font-weight: 600;
         }
 
-        input[type="text"] {
+        /* select 스타일 추가로 텍스트 입력창과 통일감 유지 */
+        input[type="text"], select {
             width: 100%;
             padding: 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 0.9rem;
             outline: none;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-family: inherit;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus, select:focus {
             border-color: var(--primary);
         }
 
@@ -405,22 +410,18 @@
             <button class="icon-btn" id="openSettingsBtn" title="설정">⚙️</button>
         </header>
 
-        <!-- 필터 탭 -->
         <div class="tabs">
             <button class="tab-btn active" id="tabAll">전체 단어</button>
             <button class="tab-btn" id="tabFav">즐겨찾기 ⭐</button>
         </div>
 
-        <!-- 플래시 카드 영역 -->
         <div class="card-wrapper">
-            <div class="flashcard" id="flashcard">
-                <!-- 카드 앞면 -->
+            <div class="flashcard" id="flashcard" lang="ja">
                 <div class="card-face card-front">
                     <div class="card-star-indicator">⭐</div>
                     <div class="kanji" id="cardKanji">단어 로딩중...</div>
                     <div class="hint-text">터치하면 뒤집기 / 좌우로 스와이프</div>
                 </div>
-                <!-- 카드 뒷면 -->
                 <div class="card-face card-back">
                     <div class="card-star-indicator">⭐</div>
                     <div class="reading" id="cardReading">요미가나</div>
@@ -430,12 +431,16 @@
             </div>
         </div>
 
-        <!-- 하단 컨트롤 영역 -->
         <div class="controls-row">
             <span class="progress" id="progressIndex">0 / 0</span>
-            <button class="btn btn-fav-toggle" id="favToggleBtn">
-                <span>⭐</span> <span id="favBtnText">즐겨찾기</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn" id="searchDictBtn" style="color: #03c75a; border-color: #03c75a; background-color: var(--card-bg);">
+                    <span>🔍</span> 사전검색
+                </button>
+                <button class="btn btn-fav-toggle" id="favToggleBtn">
+                    <span>⭐</span> <span id="favBtnText">즐겨찾기</span>
+                </button>
+            </div>
         </div>
 
         <div class="nav-buttons-container">
@@ -448,12 +453,10 @@
         </div>
     </div>
 
-    <!-- 설정 모달 -->
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <div class="modal-title">💾 단어장 시트 관리 (다중 등록)</div>
             
-            <!-- v5 업데이트: 템플릿 가져오기 버튼 추가 -->
             <div>
                 <a href="https://docs.google.com/spreadsheets/d/1a5MProcCpU8cpFRJKYYtPFiDJWZpDaEHF05mSfv0DIc/copy" 
                    target="_blank" 
@@ -464,8 +467,17 @@
             </div>
 
             <div class="input-group">
+                <label for="dictLangSelect">🔍 사전 검색 언어</label>
+                <select id="dictLangSelect">
+                    <option value="ja">일본어 사전 (기본)</option>
+                    <option value="en">영어 사전</option>
+                    <option value="all">전체 언어 사전</option>
+                </select>
+            </div>
+
+            <div class="input-group">
                 <label for="sheetNameInput">시트 이름</label>
-                <input type="text" id="sheetNameInput" placeholder="예: N2 최신 동사, 기출 명사 등">
+                <input type="text" id="sheetNameInput" placeholder="예: N2 최신 동사, 필수 영단어 등">
             </div>
 
             <div class="input-group">
@@ -478,8 +490,7 @@
             <div class="sheet-list-wrapper">
                 <label style="font-size: 0.85rem; color: var(--text-sub); font-weight: 600;">등록된 단어장 선택</label>
                 <div class="sheet-list-container" id="sheetListContainer">
-                    <!-- 자바스크립트로 동적 렌더링 -->
-                </div>
+                    </div>
             </div>
 
             <div class="instructions">
@@ -497,6 +508,13 @@
     </div>
 
     <script>
+        // --- 🧹 기존 버전 데이터 자동 청소 로직 유지 ---
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('jp_state_')) {
+                localStorage.removeItem(key);
+            }
+        });
+
         const sampleWords = [
             { 
                 kanji: "⚙️ 버튼을 눌러 단어 시트를 등록해 주세요<br>(터치해서 방법 확인)", 
@@ -521,6 +539,7 @@
         const cardMeaning = document.getElementById('cardMeaning');
         const progressIndex = document.getElementById('progressIndex');
         const favToggleBtn = document.getElementById('favToggleBtn');
+        const searchDictBtn = document.getElementById('searchDictBtn');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const shuffleBtn = document.getElementById('shuffleBtn');
@@ -534,6 +553,17 @@
         const sheetUrlInput = document.getElementById('sheetUrlInput');
         const sheetListContainer = document.getElementById('sheetListContainer');
         const addSheetBtn = document.getElementById('addSheetBtn');
+        
+        const dictLangSelect = document.getElementById('dictLangSelect');
+
+        // 사전 언어 초기 상태 불러오기
+        let dictLang = localStorage.getItem('jp_dict_lang') || 'ja';
+        dictLangSelect.value = dictLang;
+
+        dictLangSelect.addEventListener('change', (e) => {
+            dictLang = e.target.value;
+            localStorage.setItem('jp_dict_lang', dictLang);
+        });
 
         initApp();
 
@@ -611,8 +641,90 @@
 
             if (parsed.length > 0) {
                 allWords = parsed;
-                applyFilterAndRender();
+                restoreStateOrRender();
             }
+        }
+
+        // --- 단일 슬롯(Single Slot) 상태 복구 로직 ---
+        function restoreStateOrRender() {
+            if (sheetList.length === 0) {
+                applyFilterAndRender();
+                return;
+            }
+            
+            const activeSheet = sheetList[currentSheetIndex];
+            if (!activeSheet) {
+                applyFilterAndRender();
+                return;
+            }
+
+            const savedStateStr = localStorage.getItem('jp_recent_sheet_state');
+            if (savedStateStr) {
+                try {
+                    const savedState = JSON.parse(savedStateStr);
+                    
+                    if (savedState.url === activeSheet.url) {
+                        currentTab = savedState.tab || 'all';
+                        if (currentTab === 'fav') {
+                            tabFav.classList.add('active');
+                            tabAll.classList.remove('active');
+                        } else {
+                            tabAll.classList.add('active');
+                            tabFav.classList.remove('active');
+                        }
+
+                        displayWords = [];
+                        const allWordsMap = {};
+                        allWords.forEach(w => allWordsMap[w.kanji] = w);
+
+                        if (savedState.order && savedState.order.length > 0) {
+                            savedState.order.forEach(kanji => {
+                                if (allWordsMap[kanji]) {
+                                    if (currentTab === 'all' || (currentTab === 'fav' && favorites.includes(kanji))) {
+                                        displayWords.push(allWordsMap[kanji]);
+                                    }
+                                }
+                            });
+                        }
+
+                        const displayWordsKanjiSet = new Set(displayWords.map(w => w.kanji));
+                        const newWords = allWords.filter(w => {
+                            if (currentTab === 'fav' && !favorites.includes(w.kanji)) return false;
+                            return !displayWordsKanjiSet.has(w.kanji);
+                        });
+                        
+                        displayWords = displayWords.concat(newWords);
+
+                        currentIndex = savedState.index || 0;
+                        if (currentIndex >= displayWords.length) {
+                            currentIndex = 0; 
+                        }
+
+                        flashcard.classList.remove('flipped');
+                        updateCardView();
+                        return; 
+                    }
+                } catch (error) {
+                    console.error('상태 복구 중 오류 발생', error);
+                }
+            }
+            
+            applyFilterAndRender();
+        }
+
+        // --- 단일 슬롯(Single Slot) 상태 덮어쓰기 로직 ---
+        function saveCurrentState() {
+            if (sheetList.length === 0) return;
+            const activeSheet = sheetList[currentSheetIndex];
+            if (!activeSheet) return;
+            
+            const state = {
+                url: activeSheet.url, 
+                tab: currentTab,
+                order: displayWords.map(w => w.kanji),
+                index: currentIndex
+            };
+            localStorage.setItem('jp_recent_sheet_state', JSON.stringify(state));
         }
 
         function applyFilterAndRender() {
@@ -634,6 +746,7 @@
                 progressIndex.innerText = "0 / 0";
                 favToggleBtn.classList.remove('is-fav');
                 flashcard.classList.remove('is-favorited-card');
+                saveCurrentState();
                 return;
             }
 
@@ -650,6 +763,8 @@
                 favToggleBtn.classList.remove('is-fav');
                 flashcard.classList.remove('is-favorited-card');
             }
+
+            saveCurrentState();
         }
 
         let touchStartX = 0;
@@ -742,6 +857,27 @@
             if (currentTab === 'fav') {
                 setTimeout(() => { applyFilterAndRender(); }, 250);
             }
+        });
+
+        // 사용자가 설정한 언어에 맞춰 네이버 사전 URL 동적 변경
+        searchDictBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (displayWords.length === 0) return;
+            
+            const currentKanji = displayWords[currentIndex].kanji;
+            const searchWord = currentKanji.split('\n')[0].trim();
+            let searchUrl = '';
+
+            if (dictLang === 'en') {
+                searchUrl = `https://en.dict.naver.com/#/search?query=${encodeURIComponent(searchWord)}`;
+            } else if (dictLang === 'all') {
+                searchUrl = `https://dict.naver.com/dict.search?query=${encodeURIComponent(searchWord)}`;
+            } else {
+                // 기본값: 일본어 사전
+                searchUrl = `https://ja.dict.naver.com/#/search?query=${encodeURIComponent(searchWord)}`;
+            }
+            
+            window.open(searchUrl, '_blank');
         });
 
         shuffleBtn.addEventListener('click', () => {
